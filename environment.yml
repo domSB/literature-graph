@@ -1,0 +1,6 @@
+name: lit_graph
+dependencies:
+  - python=3.9
+  - pip:
+    - python-dotenv
+    - neomodel
