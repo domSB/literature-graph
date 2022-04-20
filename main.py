@@ -70,4 +70,4 @@ for papers_item in results:
         elif annotation['type'] == 'strikethrough':
             pass
         else:
-            raise NotImplementedError('Unbekannter Annotationstyp')
+            raise NotImplementedError('Unknown annotation type')

@@ -1,5 +1,4 @@
 # Literature Graph
-
 ## General overview
 This repository contains some helper scripts I used to create my **personal literature graph for 
 exploratory analysis**.
