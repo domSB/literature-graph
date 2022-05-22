@@ -4,3 +4,4 @@ dependencies:
   - pip:
     - python-dotenv
     - neomodel
+    - pydantic

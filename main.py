@@ -1,73 +1,62 @@
 import os
+import sys
+import logging
 
 from dotenv import load_dotenv
 
-from models import Publication, Author, Keyword, Excerpt, Thought, Journal, Conference, Abstract
-from papersapp import query_db
+from models.neo4j import Publication, Author, Keyword, Excerpt, Thought, Journal, Conference, Abstract
+from reference_manager import query_db
+from utils import Colours
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.INFO)
+logger = logging.getLogger('main')
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+# todo: add formatter with time for this logger
+# todo: add file handler
 
 load_dotenv()
 
+logger.info(Colours.green + 'Querying the database' + Colours.reset)
 results = query_db(os.getenv('PAPERS_DB_PATH'))
 
-for papers_item in results:
-    id_ = papers_item['id']
-    reference = papers_item['article']
-    annotations = papers_item['user_data']['annotations']
-    tags = papers_item['user_data'].get('tags', [])
-    gen_assessment = papers_item['user_data'].get('notes', None)
-    authors = reference.get('authors', [])
-    title = reference['title']
+logger.info(Colours.green + 'Query successful.\nTransferring to Neo4j' + Colours.reset)
 
-    color = papers_item['user_data']['color']
-    rating = papers_item['user_data'].get('rating', 0)
+for item in results:
 
     # Create Publication
-    publication_node = Publication(title=title, papers_id=id_).save()
+    publication_node = Publication(title=item.bib.title, identifier=item.identifier).save()
 
     # Create Authors
-    author_nodes = Author.create_or_update(*({'name': author} for author in authors))
+    author_nodes = Author.create_or_update(*({'name': author} for author in item.bib.author))
     for author_node in author_nodes:
         publication_node.authors.connect(author_node)
 
     # Create Tags
-    tag_nodes = Keyword.create_or_update(*({'name': tag} for tag in tags))
+    tag_nodes = Keyword.create_or_update(*({'name': tag} for tag in item.tags))
     for tag_node in tag_nodes:
         publication_node.tags.connect(tag_node)
 
-    # Special Note in Papers, that is related to the whole publication
-    if gen_assessment:
-        ga_node = Thought(
-            content=gen_assessment[:1000]  # String strip
-        ).save()  # has no colour nor any page reference
-        ga_node.publication.connect(publication_node)
-
     # Create Excerpts and Thoughts
-    for annotation in annotations:
-        anno_id = annotation['id']
-        if annotation['type'] == 'highlight':
+    for annotation in item.annotations:
+        thought_node = Thought(
+            content=annotation.comment,
+            color=annotation.colour,
+            page=annotation.page
+        ).save()
 
-            # Excerpts are always created, since they cannot exist already.
+        if annotation.text:  # Note is related to a highlighted text.
             excerpt_node = Excerpt(
-                content=annotation['text'][:1000],  # String strip
-                color=str(annotation['color_id']),
-                page=annotation['page_start']
+                content=annotation.text,  # String strip
+                color=annotation.colour,
+                page=annotation.page
             ).save()
+            # connect Excerpt to publication and attach Thought to Excerpt
             excerpt_node.publication.connect(publication_node)
-            if annotation['has_note']:
-                thought_node = Thought(
-                    content=annotation['note'],
-                    color=str(annotation['color_id']),  # Only Integer, should be Word
-                    page=annotation['page_start']
-                ).save()
-                thought_node.excerpt.connect(excerpt_node)
-        elif annotation['type'] == 'note':
-            thought_node = Thought(
-                content=annotation['note'],
-                color=str(annotation['color_id']),
-                page=annotation['page_start']
-            ).save()
-            thought_node.publication.connect(publication_node)
-        elif annotation['type'] == 'strikethrough':
-            pass
+            thought_node.excerpt.connect(excerpt_node)
         else:
-            raise NotImplementedError('Unknown annotation type')
+            # Connect Thought directly to publication
+            thought_node.publication.connect(publication_node)
+
+logger.info(Colours.green + 'Transfer complete' + Colours.reset)
