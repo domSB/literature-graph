@@ -15,3 +15,13 @@ class Colours:
     bold_red = "\x1b[1;31m"
     blue = "\x1b[0;34m"
     reset = "\x1b[0m"
+
+
+color_names = {
+    '#fe8e23': 'Orange',
+    '#1ea4fc': 'Blue',
+    '#00d127': 'Green',
+    '#fe3018': 'Red',
+    '#fed12f': 'Yellow',
+    '#ffd700': 'Yellow',
+    'ff0000': 'Red'}

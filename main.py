@@ -19,7 +19,7 @@ logger.setLevel(logging.INFO)
 load_dotenv()
 
 logger.info(Colours.green + 'Querying the database' + Colours.reset)
-results = query_db(os.getenv('PAPERS_DB_PATH'))
+results = query_db(os.getenv('ZOTERO_DB_PATH'))
 
 logger.info(Colours.green + 'Query successful.\nTransferring to Neo4j' + Colours.reset)
 
