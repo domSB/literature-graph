@@ -38,6 +38,10 @@ for item in results:
     for tag_node in tag_nodes:
         publication_node.tags.connect(tag_node)
 
+    # TODO: Query fpr Thoughts and Excerpts connected to this publication.
+    #   This way, Sync is possible without duplication but Excerpts of different Publications can have same content.
+
+    # TODO: Use special Code nodes to cluster Excerpts for later.
     # Create Excerpts and Thoughts
     for annotation in item.annotations:
         thought_node = Thought(
